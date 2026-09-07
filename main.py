@@ -140,7 +140,18 @@ def gatillo_emergencia():
         ordenes_en_proceso.clear()
 
         raise InterruptedError("KILL_SWITCH_ACTIVADO")
-
+def es_seguro_pagar(orden):
+    import time
+    tiempo_actual_ms = int(time.time() * 1000)
+    tiempo_creacion = int(orden.get("createTime", 0))
+    limite_pago_min = int(orden.get("payTimeLimit", 15)) 
+    
+    tiempo_vencimiento = tiempo_creacion + (limite_pago_min * 60 * 1000)
+    segundos_restantes = (tiempo_vencimiento - tiempo_actual_ms) / 1000
+    
+    if segundos_restantes < 60:
+        return False, segundos_restantes
+    return True, segundos_restantes
 PATRON_CEDULA_UNIVERSAL = r'(?i)\b(ci|c\.i\.?|cedula|cédula|rif|jur[ií]dica)?\s*[:\.-]?\s*([vejgpg])?[-:\.]?\s*([\d\.]{6,12})\b'
 PATRON_TELEFONO = r'(?<!\d)(?:0414|0424|0412|0422|0416|0426)[-\s\.]?\d{3}[-\s\.]?\d{4}(?!\d)'
 PATRON_CUENTA = r'(?<!\d)(0134(?:[\s\-\.,_]*\d){16})(?!\d)'
@@ -957,7 +968,12 @@ async def process_order(order: Dict[str, Any], listener: BinanceSAPIListener, se
                 testamento_presente = any("de autorizar debe enviar" in limpiar_texto_chat(txt) for txt in textos_extraidos)
                 if not testamento_presente:
                     logger.info(f"Disparando testamento de seguridad al cliente vía WSS para {order_id}...")
-                    mensaje_advertencia = f"📌 Ref. Orden: {order_id}\n\nPara continuar con el pago a la cuenta enviada por este chat, debe confirmarme y autorizarme.\n\nDe autorizar debe enviar el siguiente mensaje:\n“ autorizo que soy el único responsable por la cuenta enviada al chat y confirmo que no me estoy comunicando con usted ni con nadie fuera de la plataforma para tomar este anuncio ”"
+                    mensaje_advertencia = f"""📌 Ref. Orden: {order_id}
+
+Para continuar con el pago a la cuenta enviada por este chat, debe confirmarme y autorizarme.
+
+De autorizar debe enviar el siguiente mensaje:
+'autorizo que soy el unico responsable por la cuenta enviada al chat y confirmo que no me estoy comunicando con usted ni con nadie fuera de la plataforma para tomar este anuncio'"""
                     await listener.send_chat_message(session, order_id, mensaje_advertencia)
                     ordenes_advertidas.add(order_id)
                     ordenes_ignoradas[order_id] = int(time.time() * 1000)
@@ -1491,7 +1507,7 @@ async def vigilante_cuarentena_daemon(listener: BinanceSAPIListener):
                             # ¡Aquí el Asistente hace el trabajo sucio y pide el testamento!
                             elif tiene_cuenta or tiene_telefono or tiene_cedula:
                                 logger.info(f"🗣️ [ASISTENTE] El cliente envió datos nuevos en la orden {order_id}. Solicitando testamento...")
-                                mensaje_adv = f"📌 Ref. Orden: {order_id}\n\nPara continuar con el pago a la cuenta enviada por este chat, debe confirmarme y autorizarme.\n\nDe autorizar debe enviar el siguiente mensaje:\n“ autorizo que soy el único responsable por la cuenta enviada al chat y confirmo que no me estoy comunicando con usted ni con nadie fuera de la plataforma para tomar este anuncio ”"
+                               mensaje_adv = "📌 Ref. Orden: " + str(order_id) + "\n\nPara continuar con el pago a la cuenta enviada por este chat, debe confirmarme y autorizarme.\n\nDe autorizar debe enviar el siguiente mensaje:\n'autorizo que soy el unico responsable por la cuenta enviada al chat y confirmo que no me estoy comunicando con usted ni con nadie fuera de la plataforma para tomar este anuncio'"
                                 await listener.send_chat_message(session, order_id, mensaje_adv)
 
                                 # 🔥 TRUCO MAESTRO: Reiniciamos el reloj interno de la cuarentena a la hora actual. 
@@ -1608,6 +1624,16 @@ async def main_daemon() -> None:
                             # Solo procesar pagos para compras PENDIENTES
                             if estado_binance not in ["1", "PENDING"] or trade_type != "BUY":
                                 continue
+
+                            # 👇 INYECCIÓN DEL CORTAFUEGOS DE TIEMPO 👇
+                            es_seguro, segs_restantes = es_seguro_pagar(order)
+                            if not es_seguro:
+                                if order_id not in ordenes_advertidas:
+                                    logger.warning(f"⏳ Orden {order_id} ignorada por riesgo (quedan {segs_restantes:.0f}s). Dejando morir...")
+                                    ordenes_advertidas.add(order_id)
+                                ordenes_ignoradas[order_id] = int(time.time() * 1000)
+                                continue
+                            # 👆 FIN DE LA INYECCIÓN 👆
 
                             has_new_override = False # 🔥 1. LA MOVEMOS AQUÍ ARRIBA 🔥
 
