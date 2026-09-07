@@ -850,19 +850,19 @@ with tab_autoad:
                 with st.expander("🎯 Configurar Estrategia Sniper"):
                     with st.form(key=f"form_sniper_{ad_no}"):
                         c1, c2 = st.columns(2)
-                        with c1:
-                            pricer_activo = st.toggle("Activar Auto-Ajustador", value=ad_config.get("activo", False))
-                            vol_min_input = st.number_input("Monto simulación (Bs)", value=float(ad_config.get("volumen_minimo", 50000.0)), step=10000.0)
-                            intervalo = st.number_input("Frecuencia (Seg)", value=int(ad_config.get("intervalo_segundos", 5)), step=1)
-                            posicion_objetivo = st.number_input("Posición en tabla", min_value=1, max_value=50, value=int(ad_config.get("posicion_objetivo", 1)), step=1)
-                            tope_salto = st.number_input("Freno (Tope salto)", value=float(ad_config.get("tope_salto", 0.500)), format="%.3f", step=0.100)
+                       with c1:
+                            pricer_activo = st.toggle("Activar Auto-Ajustador", value=ad_config.get("activo", False), key=f"act_{ad_no}")
+                            vol_min_input = st.number_input("Monto simulación (Bs)", value=float(ad_config.get("volumen_minimo", 50000.0)), step=10000.0, key=f"vol_{ad_no}")
+                            intervalo = st.number_input("Frecuencia (Seg)", value=int(ad_config.get("intervalo_segundos", 5)), step=1, key=f"int_{ad_no}")
+                            posicion_objetivo = st.number_input("Posición en tabla", min_value=1, max_value=50, value=int(ad_config.get("posicion_objetivo", 1)), step=1, key=f"pos_{ad_no}")
+                            tope_salto = st.number_input("Freno (Tope salto)", value=float(ad_config.get("tope_salto", 0.500)), format="%.3f", step=0.100, key=f"tope_{ad_no}")
                         with c2:
-                            precio_max = st.number_input("Freno TECHO", value=float(ad_config.get("precio_maximo", 999.0)), format="%.3f")
-                            precio_min = st.number_input("Freno SUELO", value=float(ad_config.get("precio_minimo", 0.0)), format="%.3f")
+                            precio_max = st.number_input("Freno TECHO", value=float(ad_config.get("precio_maximo", 999.0)), format="%.3f", key=f"pmax_{ad_no}")
+                            precio_min = st.number_input("Freno SUELO", value=float(ad_config.get("precio_minimo", 0.0)), format="%.3f", key=f"pmin_{ad_no}")
                             opciones_bancos = ["Todos", "Banesco", "Provincial", "Mercantil", "PagoMovil"]
                             banco_idx = opciones_bancos.index(ad_config["pay_types"][0]) if ad_config.get("pay_types") and ad_config["pay_types"][0] in opciones_bancos else 0
-                            banco_filtro = st.selectbox("Competir contra banco", opciones_bancos, index=banco_idx)
-                            margen = st.number_input("Margen mejora", value=float(ad_config.get("margen_victoria", 0.001)), format="%.3f", step=0.001)
+                            banco_filtro = st.selectbox("Competir contra banco", opciones_bancos, index=banco_idx, key=f"banco_{ad_no}")
+                            margen = st.number_input("Margen mejora", value=float(ad_config.get("margen_victoria", 0.001)), format="%.3f", step=0.001, key=f"marg_{ad_no}")
 
                         if st.form_submit_button("Guardar Estrategia", type="primary", use_container_width=True):
                             pay_types_array = [] if banco_filtro == "Todos" else [banco_filtro]
