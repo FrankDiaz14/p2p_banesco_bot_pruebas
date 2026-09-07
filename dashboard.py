@@ -46,7 +46,7 @@ def sanitizar_estado(estado):
             v.pop("limite_max_bs", None)
     for k in ["bancos", "cuentas", "limites", "credenciales", "saldos", "cuentas_fondeo"]:
         if k not in estado: estado[k] = {}
-    if "config" not in estado: estado["config"] = {"dinero_durmiendo": 100000.0, "nombre_bot": "PANKIPAY"}
+    if "config" not in estado: estado["config"] = {"dinero_durmiendo": 0.0, "nombre_bot": "VORTEX P2P"}
     if "estrategias_sniper" not in estado: estado["estrategias_sniper"] = {}
     if "ordenes_vivas" not in estado: estado["ordenes_vivas"] = {"pendientes": [], "por_liberar": [], "en_cuarentena": [], "procesando": []}
     if "cola_test" not in estado: estado["cola_test"] = []
