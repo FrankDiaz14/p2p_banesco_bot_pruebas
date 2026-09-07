@@ -20,7 +20,7 @@ TZ_VZLA = timezone(timedelta(hours=-4))
 DOMINIO_LICENCIAS = "https://bot-p2p-pankipay-licencias.9zousu.easypanel.host"
 
 # 🔥 FIX VITAL: Ruta absoluta obligatoria al volumen blindado de EasyPanel 🔥
-DIR_DATA = "data"
+DIR_DATA = "/app/data"
 os.makedirs(DIR_DATA, exist_ok=True)
 DB_FILE_CONTA = os.path.join(DIR_DATA, "contabilidad.json")
 ESTADO_FILE = os.path.join(DIR_DATA, "estado_bot.json")
