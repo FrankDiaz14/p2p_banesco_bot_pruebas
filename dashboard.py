@@ -20,7 +20,7 @@ TZ_VZLA = timezone(timedelta(hours=-4))
 DOMINIO_LICENCIAS = "https://bot-p2p-pankipay-licencias.9zousu.easypanel.host"
 
 # 🔥 FIX VITAL: Ruta absoluta obligatoria al volumen blindado de EasyPanel 🔥
-DIR_DATA = "/app/data"
+DIR_DATA = "data"
 os.makedirs(DIR_DATA, exist_ok=True)
 DB_FILE_CONTA = os.path.join(DIR_DATA, "contabilidad.json")
 ESTADO_FILE = os.path.join(DIR_DATA, "estado_bot.json")
@@ -850,7 +850,7 @@ with tab_autoad:
                 with st.expander("🎯 Configurar Estrategia Sniper"):
                     with st.form(key=f"form_sniper_{ad_no}"):
                         c1, c2 = st.columns(2)
-                       with c1:
+                        with c1:
                             pricer_activo = st.toggle("Activar Auto-Ajustador", value=ad_config.get("activo", False), key=f"act_{ad_no}")
                             vol_min_input = st.number_input("Monto simulación (Bs)", value=float(ad_config.get("volumen_minimo", 50000.0)), step=10000.0, key=f"vol_{ad_no}")
                             intervalo = st.number_input("Frecuencia (Seg)", value=int(ad_config.get("intervalo_segundos", 5)), step=1, key=f"int_{ad_no}")
