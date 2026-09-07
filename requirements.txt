@@ -1,0 +1,7 @@
+playwright
+python-dotenv
+requests
+aiohttp
+streamlit
+streamlit-autorefresh
+# Forzar instalacion nuevastreamlit

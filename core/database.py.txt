@@ -1,0 +1,141 @@
+import logging
+import uuid
+from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Generator
+
+from sqlalchemy import create_engine, String, Boolean, Numeric, DateTime, Uuid
+from sqlalchemy.orm import sessionmaker, DeclarativeBase, Mapped, mapped_column, Session
+from sqlalchemy.exc import SQLAlchemyError, OperationalError, IntegrityError
+
+# -----------------------------------------------------------------------------
+# Configuración Base y Conexión
+# -----------------------------------------------------------------------------
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Motor de base de datos SQLite (Ideal para la Fase 1)
+engine = create_engine("sqlite:///p2p_core.db", connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# -----------------------------------------------------------------------------
+# Definición de Modelos (Esquemas)
+# -----------------------------------------------------------------------------
+class Base(DeclarativeBase):
+    """Clase base declarativa para los modelos de SQLAlchemy."""
+
+class CuentaBancaria(Base):
+    """
+    Modelo representativo de una Cuenta Bancaria.
+
+    Gestiona la persistencia de las cuentas maestras para el sistema P2P.
+    El sistema está diseñado para manejar exactamente 6 cuentas bancarias
+    maestras, según la configuración de la Fase 1.
+    """
+    __tablename__ = "cuentas_bancarias"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        index=True,
+        doc="Identificador único primario de la cuenta bancaria."
+    )
+    alias: Mapped[str] = mapped_column(
+        String(100),
+        unique=True,
+        nullable=False,
+        index=True,
+        doc="Nombre identificativo interno de la cuenta (Ej. 'Cuenta Principal Venta')."
+    )
+    banco: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        doc="Nombre de la institución financiera."
+    )
+    saldo_actual: Mapped[Decimal] = mapped_column(
+        Numeric(precision=15, scale=2),
+        nullable=False,
+        default=Decimal("0.00"),
+        doc="Saldo disponible exacto. Se evita coma flotante mediante Numeric/Decimal."
+    )
+    activo: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        doc="Indicador de disponibilidad de la cuenta para operar."
+    )
+    ultima_actualizacion: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        doc="Fecha y hora de última modificación en formato UTC."
+    )
+
+# -----------------------------------------------------------------------------
+# Funciones de Gestión y Utilidades Seguras
+# -----------------------------------------------------------------------------
+def init_db() -> None:
+    """
+    Inicializa la base de datos creando todas las tablas definidas.
+
+    Esta función debe ser llamada preferiblemente en el punto de
+    arranque o inicialización de la aplicación.
+    """
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Base de datos y tablas inicializadas correctamente.")
+    except OperationalError as e:
+        logger.error("Error operacional al inicializar la base de datos: %s", e)
+        raise
+    except SQLAlchemyError as e:
+        logger.error("Error de SQLAlchemy al inicializar la base de datos: %s", e)
+        raise
+
+def get_session() -> Generator[Session, None, None]:
+    """
+    Generador de sesiones de base de datos para inyección de dependencias.
+
+    Garantiza que la sesión se cierre correctamente tras su uso y
+    ejecuta un rollback de seguridad si ocurre una excepción no manejada.
+
+    Yields:
+        Session: Sesión de SQLAlchemy activa.
+    """
+    session: Session = SessionLocal()
+    try:
+        yield session
+    except SQLAlchemyError as e:
+        logger.error("Excepción en la sesión de base de datos, ejecutando rollback: %s", e)
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+def execute_safe_transaction(session: Session) -> bool:
+    """
+    Ejecuta un commit de la transacción de forma segura, encapsulando
+    el manejo de errores y realizando un rollback automático en caso de fallo.
+
+    Args:
+        session (Session): Sesión de base de datos con operaciones pendientes.
+
+    Returns:
+        bool: True si la transacción (commit) fue exitosa, False en caso de error.
+    """
+    try:
+        session.commit()
+        return True
+    except IntegrityError as e:
+        logger.error("Error de integridad (posible duplicado o violación de FK): %s", e)
+        session.rollback()
+        return False
+    except OperationalError as e:
+        logger.error("Error operacional (conexión, bloqueos en SQLite): %s", e)
+        session.rollback()
+        return False
+    except SQLAlchemyError as e:
+        logger.error("Error inesperado en BD al realizar commit: %s", e)
+        session.rollback()
+        return False
