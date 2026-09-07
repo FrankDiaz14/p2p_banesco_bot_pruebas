@@ -968,12 +968,13 @@ async def process_order(order: Dict[str, Any], listener: BinanceSAPIListener, se
                 testamento_presente = any("de autorizar debe enviar" in limpiar_texto_chat(txt) for txt in textos_extraidos)
                 if not testamento_presente:
                     logger.info(f"Disparando testamento de seguridad al cliente vía WSS para {order_id}...")
-                    mensaje_advertencia = f"""📌 Ref. Orden: {order_id}
-
-Para continuar con el pago a la cuenta enviada por este chat, debe confirmarme y autorizarme.
-
-De autorizar debe enviar el siguiente mensaje:
-'autorizo que soy el unico responsable por la cuenta enviada al chat y confirmo que no me estoy comunicando con usted ni con nadie fuera de la plataforma para tomar este anuncio'"""
+                    lineas_mensaje = [
+                        "📌 Ref. Orden: " + str(order_id),
+                        "Para continuar con el pago a la cuenta enviada por este chat, debe confirmarme y autorizarme.",
+                        "De autorizar debe enviar el siguiente mensaje:",
+                        "'autorizo que soy el unico responsable por la cuenta enviada al chat y confirmo que no me estoy comunicando con usted ni con nadie fuera de la plataforma para tomar este anuncio'"
+                    ]
+                    mensaje_advertencia = "\n\n".join(lineas_mensaje)
                     await listener.send_chat_message(session, order_id, mensaje_advertencia)
                     ordenes_advertidas.add(order_id)
                     ordenes_ignoradas[order_id] = int(time.time() * 1000)
@@ -1507,7 +1508,13 @@ async def vigilante_cuarentena_daemon(listener: BinanceSAPIListener):
                             # ¡Aquí el Asistente hace el trabajo sucio y pide el testamento!
                             elif tiene_cuenta or tiene_telefono or tiene_cedula:
                                 logger.info(f"🗣️ [ASISTENTE] El cliente envió datos nuevos en la orden {order_id}. Solicitando testamento...")
-                                mensaje_adv = "📌 Ref. Orden: " + str(order_id) + "\n\nPara continuar con el pago a la cuenta enviada por este chat, debe confirmarme y autorizarme.\n\nDe autorizar debe enviar el siguiente mensaje:\n'autorizo que soy el unico responsable por la cuenta enviada al chat y confirmo que no me estoy comunicando con usted ni con nadie fuera de la plataforma para tomar este anuncio'"
+                                lineas_mensaje = [
+                                    "📌 Ref. Orden: " + str(order_id),
+                                    "Para continuar con el pago a la cuenta enviada por este chat, debe confirmarme y autorizarme.",
+                                    "De autorizar debe enviar el siguiente mensaje:",
+                                    "'autorizo que soy el unico responsable por la cuenta enviada al chat y confirmo que no me estoy comunicando con usted ni con nadie fuera de la plataforma para tomar este anuncio'"
+                                ]
+                                mensaje_adv = "\n\n".join(lineas_mensaje)
                                 await listener.send_chat_message(session, order_id, mensaje_adv)
 
                                 # 🔥 TRUCO MAESTRO: Reiniciamos el reloj interno de la cuarentena a la hora actual. 
