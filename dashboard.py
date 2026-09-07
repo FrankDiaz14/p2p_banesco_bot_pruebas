@@ -46,7 +46,7 @@ def sanitizar_estado(estado):
             v.pop("limite_max_bs", None)
     for k in ["bancos", "cuentas", "limites", "credenciales", "saldos", "cuentas_fondeo"]:
         if k not in estado: estado[k] = {}
-    if "config" not in estado: estado["config"] = {"dinero_durmiendo": 0.0, "nombre_bot": "VORTEX P2P"}
+    if "config" not in estado: estado["config"] = {"dinero_durmiendo": 100000.0, "nombre_bot": "PANKIPAY"}
     if "estrategias_sniper" not in estado: estado["estrategias_sniper"] = {}
     if "ordenes_vivas" not in estado: estado["ordenes_vivas"] = {"pendientes": [], "por_liberar": [], "en_cuarentena": [], "procesando": []}
     if "cola_test" not in estado: estado["cola_test"] = []
@@ -847,46 +847,47 @@ with tab_autoad:
                         st.session_state.posiciones_mercado.pop(ad_no, None)
                         st.rerun()
 
-                    with st.expander("🎯 Configurar Estrategia Sniper"):
-                       with st.form(key=f"form_sniper_{ad_no}"):
-                           c1, c2 = st.columns(2)
-                           with c1:
-                               pricer_activo = st.toggle("Activar Auto-Ajustador", value=ad_config.get("activo", False), key=f"act_{ad_no}")
-                               vol_min_input = st.number_input("Monto simulación (Bs)", value=float(ad_config.get("volumen_minimo", 50000.0)), step=10000.0, key=f"vol_{ad_no}")
-                               intervalo = st.number_input("Frecuencia (Seg)", value=int(ad_config.get("intervalo_segundos", 5)), step=1, key=f"int_{ad_no}")
-                               posicion_objetivo = st.number_input("Posición en tabla", min_value=1, max_value=50, value=int(ad_config.get("posicion_objetivo", 1)), step=1, key=f"pos_{ad_no}")
-                               tope_salto = st.number_input("Freno (Tope salto)", value=float(ad_config.get("tope_salto", 0.500)), format="%.3f", step=0.100, key=f"tope_{ad_no}")
-                           with c2:
-                               precio_max = st.number_input("Freno TECHO", value=float(ad_config.get("precio_maximo", 999.0)), format="%.3f", key=f"pmax_{ad_no}")
-                               precio_min = st.number_input("Freno SUELO", value=float(ad_config.get("precio_minimo", 0.0)), format="%.3f", key=f"pmin_{ad_no}")
-                               opciones_bancos = ["Todos", "Banesco", "Provincial", "Mercantil", "PagoMovil"]
-                               banco_idx = opciones_bancos.index(ad_config["pay_types"][0]) if ad_config.get("pay_types") and ad_config["pay_types"][0] in opciones_bancos else 0
-                               banco_filtro = st.selectbox("Competir contra banco", opciones_bancos, index=banco_idx, key=f"banco_{ad_no}")
-                               margen = st.number_input("Margen mejora", value=float(ad_config.get("margen_victoria", 0.001)), format="%.3f", step=0.001, key=f"marg_{ad_no}")
+                with st.expander("🎯 Configurar Estrategia Sniper"):
+                   with st.form(key=f"form_sniper_{ad_no}"):
+                       c1, c2 = st.columns(2)
+                       with c1:
+                           pricer_activo = st.toggle("Activar Auto-Ajustador", value=ad_config.get("activo", False), key=f"act_{ad_no}")
+                           vol_min_input = st.number_input("Monto simulación (Bs)", value=float(ad_config.get("volumen_minimo", 50000.0)), step=10000.0, key=f"vol_{ad_no}")
+                           intervalo = st.number_input("Frecuencia (Seg)", value=int(ad_config.get("intervalo_segundos", 5)), step=1, key=f"int_{ad_no}")
+                           posicion_objetivo = st.number_input("Posición en tabla", min_value=1, max_value=50, value=int(ad_config.get("posicion_objetivo", 1)), step=1, key=f"pos_{ad_no}")
+                           tope_salto = st.number_input("Freno (Tope salto)", value=float(ad_config.get("tope_salto", 0.500)), format="%.3f", step=0.100, key=f"tope_{ad_no}")
+                       with c2:
+                           precio_max = st.number_input("Freno TECHO", value=float(ad_config.get("precio_maximo", 999.0)), format="%.3f", key=f"pmax_{ad_no}")
+                           precio_min = st.number_input("Freno SUELO", value=float(ad_config.get("precio_minimo", 0.0)), format="%.3f", key=f"pmin_{ad_no}")
+                           opciones_bancos = ["Todos", "Banesco", "Provincial", "Mercantil", "PagoMovil"]
+                           banco_idx = opciones_bancos.index(ad_config["pay_types"][0]) if ad_config.get("pay_types") and ad_config["pay_types"][0] in opciones_bancos else 0
+                           banco_filtro = st.selectbox("Competir contra banco", opciones_bancos, index=banco_idx, key=f"banco_{ad_no}")
+                           margen = st.number_input("Margen mejora", value=float(ad_config.get("margen_victoria", 0.001)), format="%.3f", step=0.001, key=f"marg_{ad_no}")
 
-                           if st.form_submit_button("Guardar Estrategia", type="primary", use_container_width=True):
-                               pay_types_array = [] if banco_filtro == "Todos" else [banco_filtro]
-                               if "estrategias_sniper" not in estado_global: estado_global["estrategias_sniper"] = {}
-                               estado_global["estrategias_sniper"][ad_no] = {
-                                         "activo": pricer_activo, "ad_number": ad_no, "trade_type": "BUY" if trade_type == "BUY" else "SELL", 
-                                         "precio_actual": float(price), "volumen_minimo": vol_min_input, "precio_maximo": precio_max, "precio_minimo": precio_min,
-                                         "intervalo_segundos": intervalo, "pay_types": pay_types_array, "posicion_objetivo": posicion_objetivo,
-                                         "margen_victoria": margen, "tope_salto": tope_salto, "cantidad_usdt": "MAX"
-                               }
-                               guardar_estado(estado_global)
+                       if st.form_submit_button("Guardar Estrategia", type="primary", use_container_width=True):
+                           pay_types_array = [] if banco_filtro == "Todos" else [banco_filtro]
+                           if "estrategias_sniper" not in estado_global: estado_global["estrategias_sniper"] = {}
+                           estado_global["estrategias_sniper"][ad_no] = {
+                                     "activo": pricer_activo, "ad_number": ad_no, "trade_type": "BUY" if trade_type == "BUY" else "SELL", 
+                                     "precio_actual": float(price), "volumen_minimo": vol_min_input, "precio_maximo": precio_max, "precio_minimo": precio_min,
+                                     "intervalo_segundos": intervalo, "pay_types": pay_types_array, "posicion_objetivo": posicion_objetivo,
+                                     "margen_victoria": margen, "tope_salto": tope_salto, "cantidad_usdt": "MAX"
+                           }
+                           guardar_estado(estado_global)
                                 
-                               with st.spinner("Aplicando cambio en Binance..."):
-                                         try:
-                                                  from actions.auto_pricer import ejecutar_ajuste_mercado
-                                                  temp_config = estado_global["estrategias_sniper"][ad_no].copy()
-                                                  temp_config["mi_nickname"] = mi_nickname_global
-                                                  temp_config["activo"] = True
-                                                  asyncio.run(ejecutar_ajuste_mercado(temp_config, estado_global))
-                                         except Exception as e: pass
+                           with st.spinner("Aplicando cambio en Binance..."):
+                                     try:
+                                              from actions.auto_pricer import ejecutar_ajuste_mercado
+                                              temp_config = estado_global["estrategias_sniper"][ad_no].copy()
+                                              temp_config["mi_nickname"] = mi_nickname_global
+                                              temp_config["activo"] = True
+                                              asyncio.run(ejecutar_ajuste_mercado(temp_config, estado_global))
+                                     except Exception as e: pass
                                     
-                               st.session_state.posiciones_mercado.pop(ad_no, None)
-                               st.toast("✅ ¡Estrategia Guardada e Inyectada!")
-                               st.rerun()
+                           st.session_state.posiciones_mercado.pop(ad_no, None)
+                           st.toast("✅ ¡Estrategia Guardada e Inyectada!")
+                           st.rerun()
+
 # ==========================================
 # 💸 PESTAÑA: FONDEO MATRIZ
 # ==========================================
