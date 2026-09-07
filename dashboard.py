@@ -21,7 +21,6 @@ DOMINIO_LICENCIAS = "https://bot-p2p-pankipay-licencias.9zousu.easypanel.host"
 
 # 🔥 FIX VITAL: Ruta absoluta obligatoria al volumen blindado de EasyPanel 🔥
 DIR_DATA = "/app/data"
-DIR_DATA = "data"
 os.makedirs(DIR_DATA, exist_ok=True)
 DB_FILE_CONTA = os.path.join(DIR_DATA, "contabilidad.json")
 ESTADO_FILE = os.path.join(DIR_DATA, "estado_bot.json")
@@ -71,7 +70,7 @@ def cargar_estado():
 def guardar_estado(estado):
     # 🔥 ESCUDO ANTI-BORRADOS EN EL PANEL (100% LOCAL) 🔥
     if not estado or "bancos" not in estado: return
-
+    
     os.makedirs(DIR_DATA, exist_ok=True)
     temp_file = os.path.join(DIR_DATA, "estado_bot_tmp.json")
     try:
@@ -96,10 +95,10 @@ if "posiciones_mercado" not in st.session_state: st.session_state.posiciones_mer
 def check_password():
     SUPER_USER = "FrankDiaz14"
     SUPER_PASS = "Panki18**"
-
+    
     TEMP_USER = os.environ.get("ADMIN_USER", "usuario")
     TEMP_PASS = os.environ.get("ADMIN_PASS", "12345")
-
+    
     cliente_user = TEMP_USER
     cliente_pass = TEMP_PASS
     try:
@@ -115,17 +114,17 @@ def check_password():
         if hasattr(st, "query_params"): token_url = st.query_params.get("token", "")
         else: token_url = st.experimental_get_query_params().get("token", [""])[0]
     except: pass
-
+    
     if token_url == SUPER_PASS or token_url == cliente_pass: 
         return True
 
     def password_entered():
         input_u = st.session_state["username"]
         input_p = st.session_state["password"]
-
+        
         es_master = (input_u == SUPER_USER and input_p == SUPER_PASS)
         es_cliente = (input_u == cliente_user and input_p == cliente_pass)
-
+        
         if es_master or es_cliente:
             st.session_state["password_correct"] = True
             try:
@@ -191,7 +190,7 @@ def eliminar_deuda_db(deuda_id):
     db = cargar_db_conta()
     db["deudas"] = [d for d in db["deudas"] if d["id"] != deuda_id]
     guardar_db_conta(db)
-
+    
 def eliminar_personal_db(mov_id):
     db = cargar_db_conta()
     db["flujo_personal"] = [m for m in db["flujo_personal"] if m["id"] != mov_id]
@@ -208,9 +207,9 @@ def liquidar_deuda_db(deuda_id):
 def modal_dia_contabilidad(fecha_str):
     st.markdown(f"<h4 style='text-align:center; color:#3b82f6;'>Día {fecha_str}</h4>", unsafe_allow_html=True)
     db = cargar_db_conta()
-
+    
     registros_hoy = [m for m in db["flujo"] if m["fecha"].startswith(fecha_str) and m["tipo"] in ["Ingreso", "Pérdida"]]
-
+    
     if registros_hoy:
         st.markdown("<p style='font-size:0.85rem; color:#94a3b8; margin-bottom:5px;'>Movimientos de Trading Hoy:</p>", unsafe_allow_html=True)
         for mov in registros_hoy:
@@ -223,18 +222,18 @@ def modal_dia_contabilidad(fecha_str):
                 eliminar_movimiento_db(mov['id'])
                 st.rerun()
         st.markdown("<hr style='margin: 10px 0; border-color: #1e293b;'>", unsafe_allow_html=True)
-
+    
     with st.form("form_add_ganancia", clear_on_submit=True):
         tipo_mov = st.radio("Naturaleza del movimiento:", ["Ganancia (Ingreso)", "Pérdida (Gasto)"], horizontal=True)
         concepto = st.text_input("Concepto (Opcional)", placeholder="Ej. Arbitraje Binance")
         c1, c2 = st.columns(2)
         monto = c1.number_input("Monto", min_value=0.01, step=1.0)
         moneda = c2.selectbox("Moneda", ["USDT", "VES"])
-
+        
         if st.form_submit_button("💾 Guardar Registro", type="primary", use_container_width=True):
             tipo_final = "Ingreso" if "Ganancia" in tipo_mov else "Pérdida"
             concepto_final = concepto.strip() if concepto.strip() else ("Ganancia P2P" if tipo_final == "Ingreso" else "Pérdida P2P")
-
+            
             db["flujo"].insert(0, {
                 "id": f"MOV-{int(time.time())}", 
                 "fecha": f"{fecha_str} {datetime.now(TZ_VZLA).strftime('%H:%M')}",
@@ -264,7 +263,7 @@ def modal_confirmar_eliminacion_deuda(deuda_id, entidad, monto, moneda):
         eliminar_deuda_db(deuda_id)
         st.rerun()
     if c2.button("Cancelar", use_container_width=True): st.rerun()
-
+    
 @st.dialog("⚠️ Eliminar Movimiento Personal")
 def modal_confirmar_eliminacion_personal(mov_id, concepto, monto, moneda):
     st.markdown(f"Vas a eliminar de tu bolsillo:<br>**{concepto}** por **{monto:,.2f} {moneda}**", unsafe_allow_html=True)
@@ -389,9 +388,9 @@ def parse_monto(m_str):
 def abrir_modal_test(lista_cuentas):
     # 🔥 AHORA ES UN SELECTOR DESPLEGABLE 🔥
     cuenta_activa = st.selectbox("Cuenta emisora:", lista_cuentas)
-
+    
     tipo_test = st.radio("Tipo de Operación:", ["Pago Móvil", "Transferencia Banesco"])
-
+    
     if tipo_test == "Pago Móvil":
         banco_destino = st.selectbox("Banco Destino:", [
             "0102 - Venezuela", "0104 - Ven. de Crédito", "0105 - Mercantil", 
@@ -410,15 +409,15 @@ def abrir_modal_test(lista_cuentas):
         codigo_banco = ""
 
     monto_test = st.text_input("Monto (Bs):", value="1.00")
-
+    
     st.markdown("<br>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
-
+    
     if col1.button("🚀 Lanzar Prueba", type="primary", use_container_width=True):
         if not ci_destino:
             st.error("Faltan datos por llenar.")
             return
-
+            
         payload = {
             "id": f"TEST-{int(time.time())}",
             "tipo": "PAGO_MOVIL" if tipo_test == "Pago Móvil" else "TRANSFERENCIA",
@@ -434,7 +433,7 @@ def abrir_modal_test(lista_cuentas):
         st.session_state.forzar_pausa = False # 🔥 QUITA LA PAUSA INVISIBLE
         st.toast("✅ Orden de prueba enviada al motor.")
         st.rerun()
-
+        
     if col2.button("Cancelar", use_container_width=True): 
         st.session_state.forzar_pausa = False # 🔥 QUITA LA PAUSA INVISIBLE
         st.rerun()
@@ -457,7 +456,7 @@ if not modo_edicion and not st.session_state.forzar_pausa:
     refresh_count = st_autorefresh(interval=5000, limit=None, key="panel_refresh")
 else: 
     refresh_count = st.session_state.last_refresh_count
-
+    
 is_timer_rerun = (refresh_count != st.session_state.last_refresh_count)
 st.session_state.last_refresh_count = refresh_count
 
@@ -488,7 +487,7 @@ with tab_panel:
             st.markdown("<div style='margin-top: -5px;'></div>", unsafe_allow_html=True)
             if st.button("🛑 PARADA SUAVE", help="Deja de tomar órdenes nuevas.", use_container_width=True):
                 estado_global["master_switch"] = False; guardar_estado(estado_global); st.rerun()
-
+            
             if st.button("🚨 KILL SWITCH", help="Mata el programa al instante.", use_container_width=True):
                 estado_global["master_switch"] = False
                 estado_global["emergencia"] = True
@@ -507,7 +506,7 @@ with tab_panel:
 
     st.markdown("---")
     col_izq, col_der = st.columns([1.2, 2])
-
+    
     with col_izq:
         with st.container(border=True):
             st.markdown("#### 🔗 Configuración RPA")
@@ -526,16 +525,16 @@ with tab_panel:
                     saldo_individual = float(estado_global.get("saldos", {}).get(cuenta, 0.0))
                     banco_str = estado_global.get("bancos", {}).get(cuenta, {}).get("banco", "Banesco")
                     c_nombre.markdown(f"**{cuenta}** <span style='font-size:0.75rem; color:#60a5fa;'>({banco_str})</span><br><span style='color: #94a3b8; font-size: 0.8rem;'>💳 Bs. {saldo_individual:,.2f}</span>", unsafe_allow_html=True)
-
+                    
                     is_active = estado_global["cuentas"].get(cuenta, False)
                     toggle_key = f"tgl_{cuenta}"
                     if toggle_key not in st.session_state: st.session_state[toggle_key] = is_active
                     elif st.session_state[toggle_key] != is_active: st.session_state[toggle_key] = is_active
-
+                    
                     def callback_toggle(c_name):
                         est = cargar_estado(); est["cuentas"][c_name] = st.session_state[f"tgl_{c_name}"]; guardar_estado(est)
                     nuevo_estado = c_toggle.toggle(" ", key=toggle_key, on_change=callback_toggle, args=(cuenta,), label_visibility="collapsed")
-
+                    
                     if nuevo_estado:
                         limites_acc = estado_global["limites"].get(cuenta, {})
                         if "TRANSFERENCIA" not in limites_acc:
@@ -547,9 +546,9 @@ with tab_panel:
                             }
                             estado_global["limites"][cuenta] = limites_acc
                             guardar_estado(estado_global)
-
+                        
                         st.markdown("<div style='font-size:0.75rem; font-weight:bold; color:#cbd5e1; margin-top:10px; margin-bottom:5px; border-bottom:1px solid #1e293b; padding-bottom:3px;'>MÉTODOS HABILITADOS</div>", unsafe_allow_html=True)
-
+                        
                         c_chk1, c_min1, c_max1 = st.columns([1.5, 1, 1])
                         act_trans = c_chk1.checkbox("🏦 Transf.", value=limites_acc["TRANSFERENCIA"]["activo"], key=f"trans_{cuenta}")
                         min_trans, max_trans = limites_acc["TRANSFERENCIA"]["min"], limites_acc["TRANSFERENCIA"]["max"]
@@ -563,7 +562,7 @@ with tab_panel:
                         if act_pm:
                             min_pm = c_min2.text_input("Min (Bs)", value=limites_acc["PAGO_MOVIL"]["min"], key=f"minp_{cuenta}", label_visibility="collapsed")
                             max_pm = c_max2.text_input("Max (Bs)", value=limites_acc["PAGO_MOVIL"]["max"], key=f"maxp_{cuenta}", label_visibility="collapsed")
-
+                            
                         if (act_trans != limites_acc["TRANSFERENCIA"]["activo"] or min_trans != limites_acc["TRANSFERENCIA"]["min"] or max_trans != limites_acc["TRANSFERENCIA"]["max"] or
                             act_pm != limites_acc["PAGO_MOVIL"]["activo"] or min_pm != limites_acc["PAGO_MOVIL"]["min"] or max_pm != limites_acc["PAGO_MOVIL"]["max"]):
                             estado_global["limites"][cuenta] = {
@@ -582,7 +581,7 @@ with tab_panel:
             usdt_disp = balances.get("usdt_disponible", 0.0)
             usdt_ord = balances.get("usdt_en_ordenes", 0.0)
             cap_total = balances.get("capital_total", 0.0)
-
+            
             with st.container(border=True):
                 st.markdown("#### 💼 Capital Binance")
                 c1, c2, c3 = st.columns(3)
@@ -642,7 +641,7 @@ with tab_panel:
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-
+            
             if procesando:
                 st.markdown(f"**⚡ Procesando Pago ({len(procesando)})**")
                 for ord in procesando: 
@@ -658,7 +657,7 @@ with tab_panel:
             elif not procesando:
                 st.caption("Ninguna orden en espera.")
             st.divider()
-
+            
             st.markdown(f"**Pendiente por pagar ({len(pendientes)})**")
             if pendientes:
                 for ord in pendientes: 
@@ -667,7 +666,7 @@ with tab_panel:
             else:
                 st.caption("Ninguna orden bajo control.")
             st.divider() 
-
+            
             st.markdown(f"**Por liberar ({len(por_liberar)})**")
             if por_liberar:
                 for ord in por_liberar: 
@@ -686,7 +685,7 @@ with tab_autoad:
         is_sniper_on = estado_global.get("sniper_switch", False)
         if is_sniper_on: st.markdown("<span class='badge-verde'>🟢 SNIPER GLOBAL ACTIVO</span>", unsafe_allow_html=True)
         else: st.markdown("<span class='badge-rojo'>⏹ SNIPER GLOBAL INACTIVO</span>", unsafe_allow_html=True)
-
+        
     with col_motor_ad:
         st.markdown("<br>", unsafe_allow_html=True)
         if is_sniper_on:
@@ -695,14 +694,14 @@ with tab_autoad:
         else:
             if st.button("▶ INICIAR MULTI-SNIPER", type="primary", use_container_width=True):
                 estado_global["sniper_switch"] = True; guardar_estado(estado_global); st.rerun()
-
+                
     st.markdown("---")
 
     vivas_ad = estado_global.get("ordenes_vivas", {})
     procesando_ad = vivas_ad.get("procesando", [])
     cuarentena_ad = vivas_ad.get("en_cuarentena", [])
     pendientes_ad = vivas_ad.get("pendientes", [])
-
+    
     tot_pagar_ves_ad = 0.0
     tot_pagar_usdt_ad = 0.0
     for ord_list in [procesando_ad, cuarentena_ad, pendientes_ad]:
@@ -726,7 +725,7 @@ with tab_autoad:
     api_k_current = estado_global.get("credenciales", {}).get("binance_api_key", "")
     api_s_current = estado_global.get("credenciales", {}).get("binance_api_secret", "")
     mi_nickname_global = estado_global.get("config", {}).get("mi_nickname", "")
-
+    
     with st.container(border=True):
         col_f1, col_f2, col_f3, col_btn = st.columns([1.5, 1.5, 1.5, 1])
         with col_f1: filtro_tipo = st.radio("Tipo", ["Todo", "Compra", "Venta"], horizontal=True, label_visibility="collapsed")
@@ -736,7 +735,7 @@ with tab_autoad:
             if auto_refresh and not is_sniper_on: st.markdown("<div style='margin-top:-10px;'><span style='color:#ef4444; font-size:0.75rem;'>⚠️ En pausa</span></div>", unsafe_allow_html=True)
         with col_btn:
             do_refresh = st.button("🔄 Refrescar", type="secondary", use_container_width=True)
-
+            
             if do_refresh or (auto_refresh and is_timer_rerun and is_sniper_on):
                 res = fetch_mis_anuncios(api_k_current, api_s_current)
                 if res["success"]:
@@ -747,7 +746,7 @@ with tab_autoad:
                         st.rerun()
                 else: 
                     if not auto_refresh: st.error(f"Error: {res['msg']}")
-
+                        
     anuncios = estado_global.get("anuncios_detectados", [])
     anuncios_filtrados = []
     for ad in anuncios:
@@ -759,7 +758,7 @@ with tab_autoad:
         if filtro_estado == "Pausados" and estado_binance != 3: continue
         if filtro_estado == "Cerrados" and estado_binance == 4: continue
         anuncios_filtrados.append(ad)
-
+        
     st.markdown("<br>", unsafe_allow_html=True)
     if not anuncios_filtrados: st.markdown("<div style='text-align:center; padding:50px; border:1px dashed #334155; border-radius:10px;'>No se encontraron anuncios.</div>", unsafe_allow_html=True)
     else:
@@ -769,13 +768,13 @@ with tab_autoad:
             tipo_label = "COMPRA" if trade_type == "BUY" else "VENTA"
             ad_config = estado_global.get("estrategias_sniper", {}).get(ad_no, {})
             es_sniper_activo = ad_config.get("activo", False)
-
+            
             if adv_status == 1: badge_status = "<span class='badge-verde'>Activo</span>"
             elif adv_status == 3: badge_status = "<span class='badge-gris'>Pausado</span>"
             elif adv_status == 4: badge_status = "<span class='badge-rojo'>Cerrado</span>"
             else: badge_status = f"<span class='badge-gris'>Desconocido</span>"
             if es_sniper_activo: badge_status += " <span class='badge-sniper'>🎯 SNIPER</span>"
-
+                
             with st.container(border=True):
                 col1, col2, col3 = st.columns([2.5, 2, 1])
                 with col1:
@@ -798,7 +797,7 @@ with tab_autoad:
                                 res_r = fetch_mis_anuncios(api_k_current, api_s_current)
                                 if res_r["success"]: estado_global["anuncios_detectados"] = res_r["data"]; guardar_estado(estado_global)
                                 st.rerun()
-
+                
                 if adv_status in [1, 3]: 
                     if ad_no not in st.session_state.posiciones_mercado: 
                         with st.spinner("🔍 Analizando posición en el mercado..."):
@@ -806,7 +805,7 @@ with tab_autoad:
                     pos_actual_real = st.session_state.posiciones_mercado[ad_no]
                 else: 
                     pos_actual_real = int(ad_config.get("posicion_objetivo", 1))
-
+                    
                 st.markdown(f"<div style='text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 10px;'>📍 Tu posición en mercado: <b style='color:#60a5fa;'>#{pos_actual_real}</b></div>", unsafe_allow_html=True)
 
                 col_man1, col_man2 = st.columns(2)
@@ -819,14 +818,14 @@ with tab_autoad:
                         estado_global["estrategias_sniper"][ad_no]["posicion_objetivo"] = pos_arriba
                         estado_global["estrategias_sniper"][ad_no]["activo"] = True 
                         guardar_estado(estado_global)
-
+                        
                         try:
                             from actions.auto_pricer import ejecutar_ajuste_mercado
                             temp_config = estado_global["estrategias_sniper"][ad_no].copy()
                             temp_config["mi_nickname"] = mi_nickname_global
                             asyncio.run(ejecutar_ajuste_mercado(temp_config, estado_global))
                         except Exception as e: pass
-
+                        
                         st.session_state.posiciones_mercado.pop(ad_no, None)
                         st.rerun()
 
@@ -837,57 +836,56 @@ with tab_autoad:
                         estado_global["estrategias_sniper"][ad_no]["posicion_objetivo"] = pos_abajo
                         estado_global["estrategias_sniper"][ad_no]["activo"] = True 
                         guardar_estado(estado_global)
-
+                        
                         try:
                             from actions.auto_pricer import ejecutar_ajuste_mercado
                             temp_config = estado_global["estrategias_sniper"][ad_no].copy()
                             temp_config["mi_nickname"] = mi_nickname_global
                             asyncio.run(ejecutar_ajuste_mercado(temp_config, estado_global))
                         except Exception as e: pass
-
+                        
                         st.session_state.posiciones_mercado.pop(ad_no, None)
                         st.rerun()
 
-                with st.expander("🎯 Configurar Estrategia Sniper"):
-                    with st.form(key=f"form_sniper_{ad_no}"):
-                        c1, c2 = st.columns(2)
-                       with c1:
-                        with c1:
-                            pricer_activo = st.toggle("Activar Auto-Ajustador", value=ad_config.get("activo", False), key=f"act_{ad_no}")
-                            vol_min_input = st.number_input("Monto simulación (Bs)", value=float(ad_config.get("volumen_minimo", 50000.0)), step=10000.0, key=f"vol_{ad_no}")
-                            intervalo = st.number_input("Frecuencia (Seg)", value=int(ad_config.get("intervalo_segundos", 5)), step=1, key=f"int_{ad_no}")
-                            posicion_objetivo = st.number_input("Posición en tabla", min_value=1, max_value=50, value=int(ad_config.get("posicion_objetivo", 1)), step=1, key=f"pos_{ad_no}")
-                            tope_salto = st.number_input("Freno (Tope salto)", value=float(ad_config.get("tope_salto", 0.500)), format="%.3f", step=0.100, key=f"tope_{ad_no}")
-                        with c2:
-                            precio_max = st.number_input("Freno TECHO", value=float(ad_config.get("precio_maximo", 999.0)), format="%.3f", key=f"pmax_{ad_no}")
-                            precio_min = st.number_input("Freno SUELO", value=float(ad_config.get("precio_minimo", 0.0)), format="%.3f", key=f"pmin_{ad_no}")
-                            opciones_bancos = ["Todos", "Banesco", "Provincial", "Mercantil", "PagoMovil"]
-                            banco_idx = opciones_bancos.index(ad_config["pay_types"][0]) if ad_config.get("pay_types") and ad_config["pay_types"][0] in opciones_bancos else 0
-                            banco_filtro = st.selectbox("Competir contra banco", opciones_bancos, index=banco_idx, key=f"banco_{ad_no}")
-                            margen = st.number_input("Margen mejora", value=float(ad_config.get("margen_victoria", 0.001)), format="%.3f", step=0.001, key=f"marg_{ad_no}")
+            with st.expander("🎯 Configurar Estrategia Sniper"):
+                    			 with st.form(key=f"form_sniper_{ad_no}"):
+                       				 c1, c2 = st.columns(2)
+                       				 with c1:
+                                                           pricer_activo = st.toggle("Activar Auto-Ajustador", value=ad_config.get("activo", False), key=f"act_{ad_no}")
+                                                           vol_min_input = st.number_input("Monto simulación (Bs)", value=float(ad_config.get("volumen_minimo", 50000.0)), step=10000.0, key=f"vol_{ad_no}")
+                                                           intervalo = st.number_input("Frecuencia (Seg)", value=int(ad_config.get("intervalo_segundos", 5)), step=1, key=f"int_{ad_no}")
+                                                           posicion_objetivo = st.number_input("Posición en tabla", min_value=1, max_value=50, value=int(ad_config.get("posicion_objetivo", 1)), step=1, key=f"pos_{ad_no}")
+                                                           tope_salto = st.number_input("Freno (Tope salto)", value=float(ad_config.get("tope_salto", 0.500)), format="%.3f", step=0.100, key=f"tope_{ad_no}")
+                       				 with c2:
+                                                           precio_max = st.number_input("Freno TECHO", value=float(ad_config.get("precio_maximo", 999.0)), format="%.3f", key=f"pmax_{ad_no}")
+                                                           precio_min = st.number_input("Freno SUELO", value=float(ad_config.get("precio_minimo", 0.0)), format="%.3f", key=f"pmin_{ad_no}")
+                                                           opciones_bancos = ["Todos", "Banesco", "Provincial", "Mercantil", "PagoMovil"]
+                                                           banco_idx = opciones_bancos.index(ad_config["pay_types"][0]) if ad_config.get("pay_types") and ad_config["pay_types"][0] in opciones_bancos else 0
+                                                           banco_filtro = st.selectbox("Competir contra banco", opciones_bancos, index=banco_idx, key=f"banco_{ad_no}")
+                                                           margen = st.number_input("Margen mejora", value=float(ad_config.get("margen_victoria", 0.001)), format="%.3f", step=0.001, key=f"marg_{ad_no}")
 
-                        if st.form_submit_button("Guardar Estrategia", type="primary", use_container_width=True):
-                            pay_types_array = [] if banco_filtro == "Todos" else [banco_filtro]
-                            if "estrategias_sniper" not in estado_global: estado_global["estrategias_sniper"] = {}
-                            estado_global["estrategias_sniper"][ad_no] = {
-                                "activo": pricer_activo, "ad_number": ad_no, "trade_type": "BUY" if trade_type == "BUY" else "SELL", 
-                                "precio_actual": float(price), "volumen_minimo": vol_min_input, "precio_maximo": precio_max, "precio_minimo": precio_min,
-                                "intervalo_segundos": intervalo, "pay_types": pay_types_array, "posicion_objetivo": posicion_objetivo,
-                                "margen_victoria": margen, "tope_salto": tope_salto, "cantidad_usdt": "MAX"
-                            }
-                            guardar_estado(estado_global)
-
-                            with st.spinner("Aplicando cambio en Binance..."):
-                                try:
-                                    from actions.auto_pricer import ejecutar_ajuste_mercado
-                                    temp_config = estado_global["estrategias_sniper"][ad_no].copy()
-                                    temp_config["mi_nickname"] = mi_nickname_global
-                                    temp_config["activo"] = True
-                                    asyncio.run(ejecutar_ajuste_mercado(temp_config, estado_global))
-                                except Exception as e: pass
-
-                            st.session_state.posiciones_mercado.pop(ad_no, None)
-                            st.toast("✅ ¡Estrategia Guardada e Inyectada!"); st.rerun()
+                       					 if st.form_submit_button("Guardar Estrategia", type="primary", use_container_width=True):
+                                                           pay_types_array = [] if banco_filtro == "Todos" else [banco_filtro]
+                                                           if "estrategias_sniper" not in estado_global: estado_global["estrategias_sniper"] = {}
+                                                           estado_global["estrategias_sniper"][ad_no] = {
+                               				             "activo": pricer_activo, "ad_number": ad_no, "trade_type": "BUY" if trade_type == "BUY" else "SELL", 
+                               				             "precio_actual": float(price), "volumen_minimo": vol_min_input, "precio_maximo": precio_max, "precio_minimo": precio_min,
+                               				             "intervalo_segundos": intervalo, "pay_types": pay_types_array, "posicion_objetivo": posicion_objetivo,
+                               				             "margen_victoria": margen, "tope_salto": tope_salto, "cantidad_usdt": "MAX"
+                                                           }
+                                                           guardar_estado(estado_global)
+                            
+                                                           with st.spinner("Aplicando cambio en Binance..."):
+                                                                    try:
+                                  				              from actions.auto_pricer import ejecutar_ajuste_mercado
+                                  				              temp_config = estado_global["estrategias_sniper"][ad_no].copy()
+                                  				              temp_config["mi_nickname"] = mi_nickname_global
+                                  				              temp_config["activo"] = True
+                                  				              asyncio.run(ejecutar_ajuste_mercado(temp_config, estado_global))
+                                                                    except Exception as e: pass
+                                
+                       				 st.session_state.posiciones_mercado.pop(ad_no, None)
+                       				 st.toast("✅ ¡Estrategia Guardada e Inyectada!"); st.rerun()
 
 # ==========================================
 # 💸 PESTAÑA: FONDEO MATRIZ
@@ -903,22 +901,22 @@ with tab_fondeo:
             st.markdown(f"<span class='badge-matriz'>Saldo Matriz Estimado: Bs. {saldo_matriz:,.2f}</span>", unsafe_allow_html=True)
         with st.container(border=True):
             st.markdown("#### Seleccionar Destinos y Montos")
-
+            
             # 🔥 CALCULADORA DE REPARTO AUTOMÁTICO 🔥
             c_rep1, c_rep2 = st.columns([1.5, 1])
             capital_a_repartir = c_rep1.number_input("⚡ Capital Total a Repartir (Bs):", min_value=0.0, step=100.0, help="Escribe el total y ve marcando las cuentas. El panel hará la división.")
-
+            
             # Contamos cuántas casillas están marcadas leyendo la memoria en vivo del panel
             cuentas_marcadas = sum(1 for alias in cuentas_directorio_fondeo.keys() if st.session_state.get(f"chk_{alias}", False))
-
+            
             monto_dividido = ""
             if capital_a_repartir > 0 and cuentas_marcadas > 0:
                 # Calculamos y redondeamos a 2 decimales para los bancos
                 monto_dividido = str(round(capital_a_repartir / cuentas_marcadas, 2))
                 c_rep2.markdown(f"<div style='text-align:center; padding-top:28px; color:#10b981; font-weight:bold; font-size:1.1rem;'>= {monto_dividido} Bs c/u</div>", unsafe_allow_html=True)
-
+            
             st.markdown("<hr style='margin: 10px 0; border-color: #1e293b;'>", unsafe_allow_html=True)
-
+            
             destinos_seleccionados = {}
             for alias_cuenta, datos_cuenta in cuentas_directorio_fondeo.items():
                 col1, col2 = st.columns([1, 1.5])
@@ -926,9 +924,9 @@ with tab_fondeo:
                 if activar:
                     monto = col2.text_input("Monto a enviar (Bs):", value=monto_dividido, key=f"mnt_{alias_cuenta}_{monto_dividido}")
                     if monto: destinos_seleccionados[alias_cuenta] = {"monto": monto, "cuenta": datos_cuenta["cuenta"], "cedula": datos_cuenta["cedula"], "tipo_doc": datos_cuenta["tipo_doc"]}
-
+            
             st.markdown("<br>", unsafe_allow_html=True)
-
+            
             if len(estado_global.get("cola_fondeo", [])) > 0:
                 st.warning("⏳ Hay una operación de fondeo ejecutándose.")
                 if st.button("🚨 FORZAR DETENCIÓN INMEDIATA", type="primary", use_container_width=True):
@@ -945,7 +943,7 @@ with tab_fondeo:
                             if os.path.exists("data/freno_fondeo.flag"):
                                 os.remove("data/freno_fondeo.flag")
                         except: pass
-
+                        
                         estado_global["cola_fondeo"].append({"id_fondeo": f"FND-{int(time.time())}", "cuenta_origen": cuenta_origen, "destinos": destinos_seleccionados})
                         guardar_estado(estado_global)
                         st.toast("✅ Orden de fondeo enviada.")
@@ -957,7 +955,7 @@ with tab_fondeo:
 with tab_config:
     st.markdown("### ⚙️ Control total del sistema y credenciales")
     sub_api, sub_anuncios, sub_bancos = st.tabs(["🔑 Configuración General", "📈 Identidad Sniper", "💳 Métodos de Pago"])
-
+    
     with sub_api:
         def status_lbl(n, k): return f"{n} ✅" if estado_global["credenciales"].get(k) else n
         with st.form("form_credenciales", clear_on_submit=False):
@@ -997,7 +995,7 @@ with tab_config:
                 c_usr, c_pwd = st.columns(2)
                 nuevo_user = c_usr.text_input("Nuevo Usuario (Opcional)", placeholder="Deja vacío para no cambiarlo")
                 nuevo_pass = c_pwd.text_input("Nueva Contraseña (Opcional)", type="password", placeholder="Deja vacío para no cambiarla")
-
+                
                 if st.form_submit_button("Actualizar Personalización", type="primary"):
                     if not nuevo_nombre.strip():
                         st.error("⚠️ El nombre del bot no puede estar vacío.")
@@ -1024,13 +1022,13 @@ with tab_config:
                 nuevo_nombre = st.text_input("Alias identificador (Ej. Pedro Banesco)")
                 c1, c2 = st.columns(2); usuario_banco = c1.text_input("Usuario del Banco"); clave_banco = c2.text_input("Clave del Banco", type="password")
                 c1, c2 = st.columns(2); correo_banco = c1.text_input("Correo Gmail"); clave_correo = c2.text_input("Clave de App Gmail", type="password")
-
+                
                 st.markdown("<span style='font-size:0.8rem; color:#94a3b8;'>Preguntas de Seguridad / Coordenadas (Obligatorio para Banesco)</span>", unsafe_allow_html=True)
                 q1, r1 = st.columns(2); k1 = q1.text_input("Pregunta 1"); v1 = r1.text_input("Respuesta 1")
                 q2, r2 = st.columns(2); k2 = q2.text_input("Pregunta 2"); v2 = r2.text_input("Respuesta 2")
                 q3, r3 = st.columns(2); k3 = q3.text_input("Pregunta 3"); v3 = r3.text_input("Respuesta 3")
                 q4, r4 = st.columns(2); k4 = q4.text_input("Pregunta 4"); v4 = r4.text_input("Respuesta 4")
-
+                
                 if st.form_submit_button("➕ Registrar", type="primary"):
                     if nuevo_nombre and usuario_banco and correo_banco and clave_correo:
                         estado_global["cuentas"][nuevo_nombre] = False
@@ -1051,7 +1049,7 @@ with tab_config:
                         guardar_estado(estado_global); st.toast("✅ Cuenta registrada y sincronizada."); st.rerun()
                     else:
                         st.error("Faltan datos obligatorios (Alias, Usuario, Correo, Clave App).")
-
+        
         with st.expander("🗑️ Eliminar cuenta", expanded=False):
             if cuentas_totales:
                 c_del = st.selectbox("Cuenta a eliminar:", ["Seleccionar..."] + cuentas_totales)
@@ -1071,25 +1069,25 @@ with tab_config:
 
                 if cuenta_a_editar != "Seleccionar...":
                     cuenta_data = estado_global.get("bancos", {}).get(cuenta_a_editar, {})
-
+                    
                     st.info("💡 **Instrucciones:** Solo llena los campos que deseas cambiar. **Deja en blanco** los que quieras mantener intactos. Las contraseñas están ocultas por seguridad.")
 
                     with st.form(key=f"form_editar_{cuenta_a_editar}"):
                         st.markdown("### 🔑 Credenciales de Acceso al Banco")
-
+                        
                         usuario_actual = cuenta_data.get("usuario", "")
                         nuevo_usuario = st.text_input("Usuario / Login", placeholder=f"Actual: {usuario_actual}")
                         nueva_clave = st.text_input("Nueva Contraseña del Banco", type="password", placeholder="Escribe aquí solo si deseas cambiar la contraseña...")
 
                         st.markdown("### 🔐 Seguridad y OTP (Correo / Preguntas)")
-
+                        
                         correo_actual = cuenta_data.get("correo", "")
                         nuevo_correo = st.text_input("Correo Gmail", placeholder=f"Actual: {correo_actual}")
                         nueva_clave_correo = st.text_input("Nueva Clave de App Gmail", type="password", placeholder="Escribe para cambiar la clave del correo...")
 
                         preguntas_actuales = cuenta_data.get("preguntas", {})
                         nuevas_respuestas = {}
-
+                        
                         if preguntas_actuales:
                             st.markdown("**Respuestas de Seguridad:**")
                             for pregunta in preguntas_actuales.keys():
@@ -1104,7 +1102,7 @@ with tab_config:
                             if nuevo_usuario.strip():
                                 cuenta_data["usuario"] = nuevo_usuario.strip()
                                 modificado = True
-
+                            
                             if nueva_clave.strip():
                                 cuenta_data["clave"] = nueva_clave.strip()
                                 modificado = True
@@ -1112,7 +1110,7 @@ with tab_config:
                             if nuevo_correo.strip():
                                 cuenta_data["correo"] = nuevo_correo.strip()
                                 modificado = True
-
+                                
                             if nueva_clave_correo.strip():
                                 cuenta_data["clave_correo"] = nueva_clave_correo.strip()
                                 modificado = True
@@ -1205,7 +1203,7 @@ with tab_conta:
         try:
             año_int, mes_int = map(int, mes_seleccionado.split('-'))
             cal_matrix = calendar.monthcalendar(año_int, mes_int)
-
+            
             neto_diario = {}
             for mov in flujo_mes_p2p:
                 dia = int(mov["fecha"].split(' ')[0].split('-')[2])
@@ -1213,11 +1211,11 @@ with tab_conta:
                     neto_diario[dia] = neto_diario.get(dia, 0.0) + float(mov["monto"])
                 elif mov["tipo"] == "Pérdida":
                     neto_diario[dia] = neto_diario.get(dia, 0.0) - float(mov["monto"])
-
+                    
             dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
             cols_header = st.columns(7)
             for i, d in enumerate(dias_semana): cols_header[i].markdown(f"<div style='text-align:center; color:#64748b; font-size:0.8rem; font-weight:bold; margin-bottom:10px;'>{d}</div>", unsafe_allow_html=True)
-
+            
             for semana in cal_matrix:
                 cols_dias = st.columns(7)
                 for i, dia in enumerate(semana):
@@ -1226,7 +1224,7 @@ with tab_conta:
                     else:
                         fecha_iter = f"{año_int}-{mes_int:02d}-{dia:02d}"
                         balance_dia = neto_diario.get(dia, 0.0)
-
+                        
                         color_dia = "#334155"
                         txt_dia = "0.00"
                         if balance_dia > 0:
@@ -1235,7 +1233,7 @@ with tab_conta:
                         elif balance_dia < 0:
                             color_dia = "#ef4444"
                             txt_dia = f"{balance_dia:,.2f}"
-
+                            
                         with cols_dias[i]:
                             st.markdown(f"<div style='text-align:center; height: 90px; display:flex; flex-direction:column; justify-content:center; border: 1px solid #1e293b; border-radius: 12px; background-color: #131b2f;'><span style='color:#94a3b8; font-size:1.1rem; font-weight:bold;'>{dia}</span><span style='color:{color_dia}; font-weight:bold; font-size:0.95rem;'>{txt_dia}</span></div>", unsafe_allow_html=True)
                             if st.button(" ", key=f"btn_dia_{fecha_iter}", help="Abrir día", use_container_width=True):
@@ -1348,10 +1346,10 @@ with tab_conta:
             if m["moneda"] == "USDT":
                 mes_llave = m["fecha"][:7] 
                 if mes_llave not in resumen_meses: resumen_meses[mes_llave] = {"ingresos": 0.0, "gastos": 0.0}
-
+                
                 if m["tipo"] == "Ingreso": resumen_meses[mes_llave]["ingresos"] += float(m["monto"])
                 elif m["tipo"] in ["Gasto", "Pérdida"]: resumen_meses[mes_llave]["gastos"] += float(m["monto"])
-
+                    
         for mes in sorted(resumen_meses.keys(), reverse=True):
             ing = resumen_meses[mes]["ingresos"]
             gas = resumen_meses[mes]["gastos"]
@@ -1373,7 +1371,7 @@ with tab_conta:
         total_gastos_per = sum(float(m["monto"]) for m in flujo_per_usdt if m["tipo"] == "Gasto")
         neto_personal = total_ingresos_per - total_gastos_per
         color_neto_per = "#10b981" if neto_personal >= 0 else "#ef4444"
-
+        
         st.markdown(f"""
         <div style='background-color: #0f172a; border: 1px solid #3b82f6; border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;'>
             <div><span style='color: #64748b; font-size: 0.8rem; font-weight: bold; text-transform: uppercase;'>Dinero Entrante</span><br><span style='color: #10b981; font-size: 1.2rem; font-weight: bold;'>+ {total_ingresos_per:,.2f} USDT</span></div>
@@ -1381,7 +1379,7 @@ with tab_conta:
             <div style='text-align: right; background-color: #1e293b; padding: 10px 20px; border-radius: 8px;'><span style='color: #60a5fa; font-size: 0.85rem; font-weight: bold; text-transform: uppercase;'>Mi Bolsillo Actual</span><br><span style='color: {color_neto_per}; font-size: 1.8rem; font-weight: bold;'>{neto_personal:,.2f} USDT</span></div>
         </div>
         """, unsafe_allow_html=True)
-
+        
         col_form_per, col_lista_per = st.columns([1, 2])
         with col_form_per:
             with st.container(border=True):
@@ -1399,7 +1397,7 @@ with tab_conta:
                         db_c["flujo_personal"].insert(0, {"id": f"PER-{int(time.time())}", "fecha": fecha_str_per, "tipo": p_tipo, "concepto": p_concepto, "monto": float(p_monto), "moneda": p_moneda})
                         guardar_db_conta(db_c)
                         st.rerun()
-
+                        
         with col_lista_per:
             with st.container(border=True):
                 st.markdown(f"#### 📜 Historial Personal ({MESES_ES[mes_seleccionado.split('-')[1]]})")
