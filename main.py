@@ -405,11 +405,14 @@ class BinanceSAPIListener:
 
     def _get_post_auth_string(self) -> str:
         timestamp = int(time.time() * 1000)
-        query_string = f"timestamp={timestamp}"
+        # Añadimos recvWindow de 60 segundos para evitar ceguera de órdenes por desincronización
+        query_string = f"recvWindow=60000&timestamp={timestamp}"
         signature = hmac.new(self.api_secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
         return f"{query_string}&signature={signature}"
 
     def _get_get_auth_string(self, payload: Dict[str, Any]) -> str:
+        # Añadimos recvWindow de 60 segundos para peticiones GET
+        payload["recvWindow"] = 60000
         payload["timestamp"] = int(time.time() * 1000)
         query_string = urlencode(payload)
         signature = hmac.new(self.api_secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
