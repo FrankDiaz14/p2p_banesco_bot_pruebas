@@ -22,18 +22,29 @@ CACHE_OTP_SESIONES = {}
 
 def actualizar_saldo_json(cuenta: str, saldo: float):
     """Guarda el último saldo extraído en el archivo maestro para que el panel lo muestre."""
-    try:
-        ruta = "data/estado_bot.json"
-        if os.path.exists(ruta):
+    ruta = "data/estado_bot.json"
+    if not os.path.exists(ruta):
+        return
+
+    # 🔥 FIX: Bucle de 3 intentos para evitar WinError 32 y WinError 5 por concurrencia
+    for intento in range(3):
+        try:
             with open(ruta, "r", encoding="utf-8") as f:
                 est = json.load(f)
+            
             if "saldos" not in est:
                 est["saldos"] = {}
             est["saldos"][cuenta] = saldo
+            
             with open(ruta, "w", encoding="utf-8") as f:
                 json.dump(est, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        logger.error(f"Error actualizando saldo en JSON: {e}")
+            break  # Si el guardado fue exitoso, sale del bucle
+        
+        except Exception as e:
+            if intento == 2:
+                logger.error(f"Error definitivo actualizando saldo en JSON tras 3 intentos: {e}")
+            else:
+                time.sleep(0.1) # Espera 100ms antes de intentar de nuevo si el archivo está bloqueado
 
 async def find_element_in_frames(page: Page, selector: str, timeout: int = 25000):
     start_time = time.time()
@@ -774,6 +785,11 @@ async def execute_transfer(page: Page, payment_data: dict) -> Tuple[bool, str]:
                                 await page.screenshot(path=ruta_captura_final) # 🔥 Sin full_page para ahorrar RAM y Segundos
                                 
                             logger.info(f">>> TRANSFERENCIA LIQUIDADA. Referencia: {ref} <<<")
+
+                            # Añadir este bloque para que Telegram avise de los Fondeos
+                            if "FONDEO" in order_id:
+                                mensaje_fondeo = f"✅ **FONDEO EXITOSO:** Se transfirieron Bs. {monto_orden_float:,.2f} a la cuenta {cuenta_nombre}. Ref: {ref}"
+                                await enviar_foto_telegram(ruta_captura_final, mensaje_fondeo)
 
                             if saldo_actual > 0:
                                 saldo_post_pago = round(saldo_actual - monto_orden_float, 2)
