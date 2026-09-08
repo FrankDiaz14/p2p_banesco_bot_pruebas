@@ -1082,13 +1082,27 @@ with tab_config:
                         nueva_clave_correo = st.text_input("Nueva Clave de App Gmail", type="password", placeholder="Escribe para cambiar la clave del correo...")
 
                         preguntas_actuales = cuenta_data.get("preguntas", {})
-                        nuevas_respuestas = {}
+                        preg_items = list(preguntas_actuales.items())
+                        while len(preg_items) < 4: preg_items.append(("", ""))
+
+                        st.markdown("### 🛡️ Preguntas de Seguridad")
+                        st.caption("Modifica la pregunta o la respuesta. Si dejas la respuesta en blanco, se conservará la que ya estaba guardada.")
                         
-                        if preguntas_actuales:
-                            st.markdown("**Respuestas de Seguridad:**")
-                            for pregunta in preguntas_actuales.keys():
-                                ans = st.text_input(f"Nueva respuesta para: {pregunta.capitalize()}", type="password", placeholder="***")
-                                nuevas_respuestas[pregunta] = ans
+                        col_q1, col_a1 = st.columns(2)
+                        nk1 = col_q1.text_input("Pregunta 1", value=preg_items[0][0].capitalize() if preg_items[0][0] else "")
+                        nv1 = col_a1.text_input("Respuesta 1", type="password", placeholder="*** (Escribe para cambiar)")
+
+                        col_q2, col_a2 = st.columns(2)
+                        nk2 = col_q2.text_input("Pregunta 2", value=preg_items[1][0].capitalize() if preg_items[1][0] else "")
+                        nv2 = col_a2.text_input("Respuesta 2", type="password", placeholder="*** (Escribe para cambiar)")
+
+                        col_q3, col_a3 = st.columns(2)
+                        nk3 = col_q3.text_input("Pregunta 3", value=preg_items[2][0].capitalize() if preg_items[2][0] else "")
+                        nv3 = col_a3.text_input("Respuesta 3", type="password", placeholder="*** (Escribe para cambiar)")
+
+                        col_q4, col_a4 = st.columns(2)
+                        nk4 = col_q4.text_input("Pregunta 4", value=preg_items[3][0].capitalize() if preg_items[3][0] else "")
+                        nv4 = col_a4.text_input("Respuesta 4", type="password", placeholder="*** (Escribe para cambiar)")
 
                         submit_edicion = st.form_submit_button("💾 Guardar Cambios", type="primary")
 
@@ -1111,12 +1125,23 @@ with tab_config:
                                 cuenta_data["clave_correo"] = nueva_clave_correo.strip()
                                 modificado = True
 
-                            for preg, resp in nuevas_respuestas.items():
-                                if resp.strip():
-                                    cuenta_data["preguntas"][preg] = resp.strip()
-                                    modificado = True
+                            nuevas_preguntas = {}
+                            for new_k, new_v, old_k, old_v in [
+                                (nk1, nv1, preg_items[0][0], preg_items[0][1]),
+                                (nk2, nv2, preg_items[1][0], preg_items[1][1]),
+                                (nk3, nv3, preg_items[2][0], preg_items[2][1]),
+                                (nk4, nv4, preg_items[3][0], preg_items[3][1])
+                            ]:
+                                key_limpia = new_k.strip().lower()
+                                if key_limpia:
+                                    # Si escribió una respuesta nueva, la usamos. Si no, mantenemos la vieja.
+                                    valor_final = new_v.strip() if new_v.strip() else old_v
+                                    nuevas_preguntas[key_limpia] = valor_final
+                                    if key_limpia != old_k or valor_final != old_v:
+                                        modificado = True
 
                             if modificado:
+                                cuenta_data["preguntas"] = nuevas_preguntas
                                 estado_global["bancos"][cuenta_a_editar] = cuenta_data
                                 guardar_estado(estado_global)
                                 st.toast(f"✅ ¡Credenciales de {cuenta_a_editar} actualizadas!")
