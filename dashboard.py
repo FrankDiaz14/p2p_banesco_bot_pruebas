@@ -83,7 +83,7 @@ def guardar_estado(estado):
     except Exception: pass
 
 estado_global = cargar_estado()
-NOMBRE_BOT = estado_global.get("config", {}).get("nombre_bot", "VORTEX").strip().upper()
+NOMBRE_BOT = "VORTEX P2P"
 
 # --- 3. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title=NOMBRE_BOT, page_icon="logo.jpg", layout="wide") 
@@ -963,7 +963,7 @@ with tab_config:
             with st.container(border=True):
                 st.markdown("#### 🌐 Entorno y Capital")
                 col_env1, col_env2 = st.columns(2)
-                with col_env1: dinero_durmiendo = st.number_input("Dinero Durmiendo (Bs. intocables)", value=float(estado_global.get("config", {}).get("dinero_durmiendo", 100000.0)), step=10000.0)
+                with col_env1: dinero_durmiendo = st.number_input("Dinero Durmiendo (Bs. intocables)", value=float(estado_global.get("config", {}).get("dinero_durmiendo", 00.0)), step=00.0)
                 with col_env2:
                     proxy_server = st.text_input("Servidor Proxy IP:PORT", value=estado_global.get("config", {}).get("proxy_server", ""))
                     col_px_u, col_px_p = st.columns(2)
@@ -989,24 +989,19 @@ with tab_config:
                 estado_global["credenciales"]["telegram_chat_id_exitos"] = chat_exitos; estado_global["credenciales"]["telegram_chat_id_errores"] = chat_reportes
                 guardar_estado(estado_global); st.toast("✅ Configuración guardada."); st.rerun()
 
-        with st.expander("🔐 Personalizar Bot (Nombre y Accesos)", expanded=False):
-            st.caption("Puedes cambiar solo el nombre y dejar los accesos en blanco para no alterarlos.")
+        with st.expander("🔐 Cambiar Accesos del Panel", expanded=False):
+            st.caption("Deja en blanco los campos que no desees modificar.")
             with st.form("form_cambio_login", clear_on_submit=False):
-                nuevo_nombre = st.text_input("Nombre del Bot (Ej. MiEmpresa P2P)", value=estado_global.get("config", {}).get("nombre_bot", "PANKIPAY"))
                 c_usr, c_pwd = st.columns(2)
-                nuevo_user = c_usr.text_input("Nuevo Usuario (Opcional)", placeholder="Deja vacío para no cambiarlo")
-                nuevo_pass = c_pwd.text_input("Nueva Contraseña (Opcional)", type="password", placeholder="Deja vacío para no cambiarla")
+                nuevo_user = c_usr.text_input("Nuevo Usuario (Opcional)", placeholder="Escribe el nuevo usuario...")
+                nuevo_pass = c_pwd.text_input("Nueva Contraseña (Opcional)", type="password", placeholder="Escribe la nueva contraseña...")
                 
-                if st.form_submit_button("Actualizar Personalización", type="primary"):
-                    if not nuevo_nombre.strip():
-                        st.error("⚠️ El nombre del bot no puede estar vacío.")
-                    else:
-                        if "config" not in estado_global: estado_global["config"] = {}
-                        estado_global["config"]["nombre_bot"] = nuevo_nombre.strip().upper()
-                        if nuevo_user.strip(): estado_global["config"]["login_user"] = nuevo_user.strip()
-                        if nuevo_pass.strip(): estado_global["config"]["login_pass"] = nuevo_pass.strip()
-                        guardar_estado(estado_global)
-                        st.success("✅ ¡Actualizado! Recarga la página para ver los cambios.")
+                if st.form_submit_button("Actualizar Accesos", type="primary"):
+                    if "config" not in estado_global: estado_global["config"] = {}
+                    if nuevo_user.strip(): estado_global["config"]["login_user"] = nuevo_user.strip()
+                    if nuevo_pass.strip(): estado_global["config"]["login_pass"] = nuevo_pass.strip()
+                    guardar_estado(estado_global)
+                    st.success("✅ ¡Accesos actualizados! Recarga la página para ver los cambios.")
 
     with sub_anuncios:
         with st.form("form_nickname"):
